@@ -21,7 +21,7 @@ class DependencyParser:
         if not crate_data.get("versions"):
             print("Versions not found", file=sys.stderr)
             sys.exit(1)
-            return []
+
         # Берем самую новую версию
         version = crate_data["versions"][0]
 
@@ -34,17 +34,18 @@ class DependencyParser:
         except Exception as e:
             print(f"Error parsing dependencies: {e}", file=sys.stderr)
             sys.exit(1)
-            return []
 
         # извлекаем имена обычных зависимостей
         dependencies = []
         for dep in deps_data.get("dependencies", []):
             if dep.get("kind") == "normal":  # пропускаем dev и build
-                dependencies.append(dep["crate_id"])  # или dep["name"]
+                if dep["crate_id"] != crate_name: # пропускаем самозависимости
+                    dependencies.append(dep["crate_id"])
 
         return dependencies
 
 
 if __name__ == '__main__':
-    deps = DependencyParser.getDependencies("serde")
+    parser = DependencyParser("https://crates.io/api/v1/crates/")
+    deps = parser.getDependencies("rustc-std-workspace-core")
     print(deps)
