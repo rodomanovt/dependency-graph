@@ -1,8 +1,8 @@
 import argparse
 import os
-import sys
 import urllib.parse
 import re
+from DependencyParser import *
 
 
 def getConfig():
@@ -52,19 +52,32 @@ def isValidConfig(config: dict) -> bool:
             r'[a-zA-Z]{2,}$'  # TLD
         )
         if not (regex.match(urlPath)):
-            print(f"{config['packageUrlPath']}: not a valid URL or domain")
+            print(f"{config['packageUrlPath']}: not a valid URL")
             return False
+
+    filename = config['outputFile']
+    if '/' in filename or '<' in filename or '>' in filename or \
+            ':' in filename or '"' in filename or '|' in filename or \
+            '?' in filename or '*' in filename:
+        print(f"{filename}: not a valid file name")
+        return False
 
     return True
 
 
-
 def main():
     config = getConfig()
-    if isValidConfig(config):
-        print(config)
-    else:
+    if not isValidConfig(config):
         sys.exit(1)
+
+    packageName = config['packageName']
+    packageUrlPath = config['packageUrlPath']
+
+    depsParser = DependencyParser(packageUrlPath)
+    deps = depsParser.getDependencies(packageName)
+    print(deps)
 
 if __name__ == '__main__':
     main()
+    # python3 main.py serde https://crates.io/api/v1/crates/ 2 -d 3
+    # python3 main.py rand https://crates.io/api/v1/crates/ 2 -d 3
