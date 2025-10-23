@@ -27,7 +27,7 @@ def getConfig():
         'testRepo': args.testRepo,
         'outputAscii': args.outputAscii,
         'maxDepth': args.maxDepth,
-        'outputOrder': args.outputOrder
+        'showDownloadOrder': args.outputOrder
     }
 
 
@@ -121,6 +121,30 @@ def buildDependencyGraph(config: dict):
 
     print(f"Graph built successfully: {outputFile}")
 
+def showDownloadOrder(file: str):
+    # Парсим рёбра из DOT-файла
+    edges = []
+    with open(file, 'r', encoding='utf-8') as f:
+        for line in f:
+            match = re.search(r'"([^"]+)"\s*->\s*"([^"]+)"', line)
+            if match:
+                parent, child = match.groups()
+                edges.append((parent, child))
+
+    # Граф изначально строился сверху вниз
+    # В файле переходы записаны от корневой вершины к конечным
+    # Считываем вершины, в которые мы переходили, в обратном порядке
+    rights = []
+    for i in range(len(edges) - 1, -1, -1):
+        if edges[i][1] not in rights:
+            rights.append(edges[i][1])
+
+    result = rights + [edges[0][0]]  # добавляем корневую вершину
+    print("Порядок загрузки пакетов:")
+    for i, el in enumerate(result, 1):
+        print(f"{i}) {el}")
+    print()
+
 
 def main():
     config = getConfig()
@@ -130,8 +154,11 @@ def main():
     testRepo = config['testRepo']
     buildDependencyGraph(config)
 
-    file = f'{config['outputFile']}.dot' if not testRepo else config['packageUrlPath']
-    # print(file)
+    graphFile = f"{config['outputFile']}.dot" if not config['outputFile'].endswith(".dot") else config['outputFile']
+    print(graphFile)
+
+    if config['showDownloadOrder']:
+        showDownloadOrder(graphFile)
 
 
 

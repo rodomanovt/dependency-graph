@@ -61,9 +61,9 @@ class DependencyParser:
                     if match:
                         dependencies.append(match.group(1))
         except FileNotFoundError:
-            raise FileNotFoundError(f"Файл не найден: {self.repoPath}")
+            raise FileNotFoundError(f"File not found: {self.repoPath}")
         except Exception as e:
-            raise RuntimeError(f"Ошибка при чтении DOT-файла: {e}")
+            raise RuntimeError(f"Error reading dot file: {e}")
 
         return dependencies
 

@@ -1,49 +1,24 @@
-import urllib.request
-import json
-import sys
+import re
 
-def get_dependencies_via_api(crate_name, version=None):
-    # Шаг 1: получить информацию о версии
-    base_url = "https://crates.io"
-    crate_url = f"{base_url}/api/v1/crates/{crate_name}"
-    if version:
-        crate_url += f"/{version}"
+def topological_sort_dfs(dot_file_path: str):
+    # Парсим рёбра из DOT-файла
+    edges = []
+    with open(dot_file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            match = re.search(r'"([^"]+)"\s*->\s*"([^"]+)"', line)
+            if match:
+                parent, child = match.groups()
+                edges.append((parent, child))
 
-    try:
-        with urllib.request.urlopen(crate_url) as resp:
-            crate_data = json.load(resp)
-    except Exception as e:
-        print(f"Ошибка при получении данных пакета: {e}", file=sys.stderr)
-        return []
+    # Граф изначально строился сверху вниз
+    # В файле переходы записаны от корневой вершины к конечным
+    # Считываем вершины, в которые мы переходили, в обратном порядке
+    rights = []
+    for i in range(len(edges)-1, -1, -1):
+        if edges[i][1] not in rights:
+            rights.append(edges[i][1])
 
-    # Берём первую версию (самую свежую), если не указана явно
-    if version is None:
-        if not crate_data.get("versions"):
-            print("Версии не найдены", file=sys.stderr)
-            return []
-        version_info = crate_data["versions"][0]
-    else:
-        version_info = crate_data["version"]  # при явном указании версии структура может отличаться
+    result = rights + [edges[0][0]] # добавляем корневую вершину
+    print(result)
 
-    # Шаг 2: получить зависимости по ссылке
-    deps_path = version_info["links"]["dependencies"]
-    deps_url = base_url + deps_path
-
-    try:
-        with urllib.request.urlopen(deps_url) as resp:
-            deps_data = json.load(resp)
-    except Exception as e:
-        print(f"Ошибка при получении зависимостей: {e}", file=sys.stderr)
-        return []
-
-    # Шаг 3: извлечь имена обычных зависимостей
-    dependencies = []
-    for dep in deps_data.get("dependencies", []):
-        if dep.get("kind") == "normal":  # пропускаем dev и build
-            dependencies.append(dep["crate_id"])  # или dep["name"]
-
-    return dependencies
-
-# Пример использования
-deps = get_dependencies_via_api("serde")
-print(deps)
+topological_sort_dfs("testGraph.dot")
