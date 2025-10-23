@@ -15,6 +15,7 @@ def getConfig():
     # Необязательные флаги
     parser.add_argument('-t', '--testRepo', action='store_true', default=False)
     parser.add_argument('-a', '--outputAscii', action='store_true', default=False)
+    parser.add_argument('-o', '--outputOrder', action='store_true', default=False)
     parser.add_argument('-d', '--maxDepth', type=int, default=1)
 
     args = parser.parse_args()
@@ -25,7 +26,8 @@ def getConfig():
         'outputFile': args.outputFile,
         'testRepo': args.testRepo,
         'outputAscii': args.outputAscii,
-        'maxDepth': args.maxDepth
+        'maxDepth': args.maxDepth,
+        'outputOrder': args.outputOrder
     }
 
 
@@ -74,6 +76,7 @@ def isValidConfig(config: dict) -> bool:
 def buildDependencyGraph(config: dict):
     rootPackage = config['packageName']
     packageUrlPath = config['packageUrlPath']
+    testRepo = config['testRepo']
     outputFile = f"{config['outputFile']}.dot" if not config['outputFile'].endswith(".dot") else config['outputFile']
     maxDepth = config['maxDepth']
 
@@ -98,7 +101,10 @@ def buildDependencyGraph(config: dict):
             continue
         visited.add(current)
 
-        deps = depsParser.getDependencies(current)
+        if not testRepo:
+            deps = depsParser.getDependencies(current)
+        else:
+            deps = depsParser.getTestDependencies(current)
 
         for dep in deps:
             edge = (current, dep)
@@ -122,10 +128,11 @@ def main():
         sys.exit(1)
 
     testRepo = config['testRepo']
-    if not testRepo:
-        buildDependencyGraph(config)
-    else:
-        pass
+    buildDependencyGraph(config)
+
+    file = f'{config['outputFile']}.dot' if not testRepo else config['packageUrlPath']
+    # print(file)
+
 
 
 if __name__ == '__main__':
@@ -133,3 +140,4 @@ if __name__ == '__main__':
     # python3 main.py serde https://crates.io/api/v1/crates/ output -d 2
     # python3 main.py rand https://crates.io/api/v1/crates/ output -d 3
     # python3 main.py libc https://crates.io/api/v1/crates/ output -d 2
+    # python3 main.py B -t testGraph.dot output -d 3

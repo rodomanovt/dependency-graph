@@ -1,15 +1,17 @@
 import urllib.request
 import json
 import sys
+import re
 
 class DependencyParser:
     def __init__(self, repoUrl):
         self.repoUrl = repoUrl # https://crates.io/api/v1/crates/
+        self.repoPath = self.repoUrl
 
 
-    def getDependencies(self, crate_name):
+    def getDependencies(self, crateName):
         # Получение информацию о версии
-        crateUrl = self.repoUrl + crate_name
+        crateUrl = self.repoUrl + crateName
         try:
             with urllib.request.urlopen(crateUrl) as resp:
                 crate_data = json.load(resp)
@@ -39,8 +41,29 @@ class DependencyParser:
         dependencies = []
         for dep in deps_data.get("dependencies", []):
             if dep.get("kind") == "normal":  # пропускаем dev и build
-                if dep["crate_id"] != crate_name: # пропускаем самозависимости
+                if dep["crate_id"] != crateName: # пропускаем самозависимости
                     dependencies.append(dep["crate_id"])
+
+        return dependencies
+
+
+    def getTestDependencies(self, crateName):
+        dependencies = []
+        # Экранируем специальные символы в имени пакета для регулярного выражения
+        escaped_name = re.escape(crateName)
+        # Шаблон: "package_name" -> "dependency"
+        pattern = re.compile(rf'^\s*"{escaped_name}"\s*->\s*"([^"]+)"\s*;?\s*$')
+
+        try:
+            with open(self.repoPath, 'r', encoding='utf-8') as f:
+                for line in f:
+                    match = pattern.match(line)
+                    if match:
+                        dependencies.append(match.group(1))
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Файл не найден: {self.repoPath}")
+        except Exception as e:
+            raise RuntimeError(f"Ошибка при чтении DOT-файла: {e}")
 
         return dependencies
 
