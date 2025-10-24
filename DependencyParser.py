@@ -63,7 +63,7 @@ class DependencyParser:
         except FileNotFoundError:
             raise FileNotFoundError(f"File not found: {self.repoPath}")
         except Exception as e:
-            raise RuntimeError(f"Error reading dot file: {e}")
+            raise RuntimeError(f"Error reading d2 file: {e}")
 
         return dependencies
 

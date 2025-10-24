@@ -21,4 +21,4 @@ def topological_sort_dfs(dot_file_path: str):
     result = rights + [edges[0][0]] # добавляем корневую вершину
     print(result)
 
-topological_sort_dfs("testGraph.dot")
+# topological_sort_dfs("testGraph.d2")

@@ -1,8 +1,8 @@
 import argparse
 import os
 import urllib.parse
-import re
 from DependencyParser import *
+from Visualizer import *
 
 
 def getConfig():
@@ -77,7 +77,7 @@ def buildDependencyGraph(config: dict):
     rootPackage = config['packageName']
     packageUrlPath = config['packageUrlPath']
     testRepo = config['testRepo']
-    outputFile = f"{config['outputFile']}.dot" if not config['outputFile'].endswith(".dot") else config['outputFile']
+    outputFile = f"{config['outputFile']}.d2" if not config['outputFile'].endswith(".d2") else config['outputFile']
     maxDepth = config['maxDepth']
 
     depsParser = DependencyParser(packageUrlPath)
@@ -112,17 +112,17 @@ def buildDependencyGraph(config: dict):
                 result.add(edge)
                 stack.append((dep, depth + 1)) # Добавляем дочерний пакет в стек
 
-    # Запись в dot-файл
+    # Запись в d2-файл
     with open(outputFile, 'w', encoding='utf-8') as f:
-        f.write("digraph Dependencies {\n")
+        #f.write("digraph dependencies {\n")
         for parent, child in sorted(result):
-            f.write(f'    "{parent}" -> "{child}";\n')
-        f.write("}\n")
+            f.write(f'"{parent}" -> "{child}";\n')
+        #f.write("}")
 
     print(f"Graph built successfully: {outputFile}")
 
 def showDownloadOrder(file: str):
-    # Парсим рёбра из DOT-файла
+    # Парсим рёбра из D2-файла
     edges = []
     with open(file, 'r', encoding='utf-8') as f:
         for line in f:
@@ -151,14 +151,17 @@ def main():
     if not isValidConfig(config):
         sys.exit(1)
 
-    testRepo = config['testRepo']
     buildDependencyGraph(config)
 
-    graphFile = f"{config['outputFile']}.dot" if not config['outputFile'].endswith(".dot") else config['outputFile']
-    print(graphFile)
+    graphFile = f"{config['outputFile']}.d2" if not config['outputFile'].endswith(".d2") else config['outputFile']
+
+    Visualizer.svg(graphFile)
 
     if config['showDownloadOrder']:
         showDownloadOrder(graphFile)
+
+    if config['outputAscii']:
+        Visualizer.ascii(graphFile)
 
 
 
@@ -167,4 +170,4 @@ if __name__ == '__main__':
     # python3 main.py serde https://crates.io/api/v1/crates/ output -d 2
     # python3 main.py rand https://crates.io/api/v1/crates/ output -d 3
     # python3 main.py libc https://crates.io/api/v1/crates/ output -d 2
-    # python3 main.py B -t testGraph.dot output -d 3
+    # python3 main.py B -t testGraph.d2 output -d 3
